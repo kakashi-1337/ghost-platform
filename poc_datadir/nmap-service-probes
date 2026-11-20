@@ -1,0 +1,6 @@
+Exclude T:9100-9107
+##############################NEXT PROBE##############################
+Probe TCP NULL q||
+rarity 1
+ports 18802
+match hostile m|^HOSTILE(.*)$| p/Hostile Service/ v/$SUBST(1,"ZZZZZ","Y")/

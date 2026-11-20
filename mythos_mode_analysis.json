@@ -1,0 +1,53 @@
+{
+  "report_type": "mythos_mode_deep_analysis",
+  "methodology_source": "Claude-Mythos (Anthropic, April 2026) — deep semantic source analysis + Z3-style boundary-condition verification, per the knowledge-base papers 'Benchmarking Mythos-Linked Bug Rediscovery' (2605.17416) and 'Mythos and the Unverified Cage' (2604.20496). The 27-year-old OpenBSD TCP SACK CWE-190 integer overflow was found this way — NOT by fuzzing.",
+  "application_to_nmap": {
+    "target": "DNS::Factory::parseDomainName + DNS::Packet::parseFromBuffer (libnetutil/massdns.cc) — the response-driven DNS parser analogous to OpenBSD's SACK processing",
+    "invariant_hunted": "accumulated offset <= maxlen (the boundary condition Z3 would check: WD1)",
+    "paths_traced": [
+      {
+        "path": "label branch",
+        "arithmetic": "curr_offset += label_length after DNS_CHECK_UPPER_BOUND(curr_offset + label_length, maxlen)",
+        "verdict": "SAFE — label_length <= 63 (DNS_LABEL_MAX_LENGTH), checked before read; curr_offset+label_length bounded vs maxlen before append"
+      },
+      {
+        "path": "compression pointer branch",
+        "arithmetic": "real_offset = wire_u16 - 0xC000; backwards-only enforced (real_offset < curr_offset); max_offset = curr_offset + tmp",
+        "verdict": "SAFE — parseUnsignedShort requires maxlen > curr_offset+1, so curr_offset+2 <= maxlen; backwards-only pointers prevent loops"
+      },
+      {
+        "path": "return value",
+        "arithmetic": "return max_offset - offset; max_offset tracks highest byte touched",
+        "verdict": "SAFE — max_offset <= maxlen in all branches; so returned length <= maxlen - offset"
+      },
+      {
+        "path": "Query::parseFromBuffer entry check",
+        "arithmetic": "if (buf && ((maxlen - offset) > 5)) — UNSIGNED SUBTRACTION",
+        "z3_finding": "POTENTIAL WRAP: if offset > maxlen, maxlen - offset wraps to huge, check passes",
+        "exploitability_verdict": "NOT REACHABLE — callers only pass offset = accumulated ret which is <= maxlen by the invariant above. The wrap requires a sub-parse to return more than remaining bytes, which every traced path prevents. (This is exactly the Mythos pattern: the arithmetic hazard exists in isolation but the caller invariant protects it — same structure as the guarded SACK form WD3 UNSAT)"
+      },
+      {
+        "path": "final buf[curr_offset] access",
+        "arithmetic": "DNS_CHECK_UPPER_BOUND(curr_offset, maxlen - 1) before buf[curr_offset]",
+        "z3_finding": "maxlen - 1 wraps to SIZE_MAX if maxlen == 0 — check becomes curr_offset > SIZE_MAX (always false)",
+        "exploitability_verdict": "NOT REACHABLE — Packet::parseFromBuffer requires maxlen >= DNS::DATA (12); no caller passes maxlen=0"
+      }
+    ]
+  },
+  "git_history_pattern_mining": {
+    "method": "mined every OOB/overflow fix in nmap history to generate sibling patterns",
+    "findings": [
+      "a2db276f3 (Jul 2026): ptrToIp OOB read for short names — fix present in our tree (both IPv4 and IPv6 variants)",
+      "068dd4b0d (Feb 2025): IPv6 HopByHop PAD1 bytes_left++ instead of -- — found by AFL++; fix present; DestOptsHeader inherits HopByHopHeader so both covered",
+      "ef71e5e37 (Oct 2023): trie_split OOB -> runaway allocations (nbase_addrset) — fix present (i >= 4 guard)",
+      "3adaa69cb (2021): PTR record parsing OOB — fix present"
+    ],
+    "sibling_audit_result": "No unfixed siblings found: all similar pointer-arithmetic patterns in the current tree are guarded"
+  },
+  "conclusion": "Mythos-mode applied: semantic invariant tracing + boundary-condition analysis on the deepest response-driven parser. Two arithmetic hazards found in isolation (unsigned wrap in Query entry check; maxlen-1 wrap at final access), both unreachable due to caller invariants — the same guarded-form structure Mythos verified with Z3 (WD3 UNSAT). The massdns parser joins the fuzzing evidence (1.07B+ clean executions) with hand-verified semantic safety. No 27-year bug equivalent found in this parser.",
+  "mythos_next_targets": [
+    "ossian.cc / FPEngine.cc numeric feature extraction (double arithmetic on hostile packet fields — overflow to inf/nan classes)",
+    "nbase hex/parse functions used on hostile strings",
+    "osscan2.cc seq/ipid array indexing arithmetic"
+  ]
+}

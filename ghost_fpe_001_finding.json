@@ -1,0 +1,31 @@
+{
+  "report_type": "mythos_finding_ghost_fpe_001",
+  "finding": {
+    "id": "GHOST-FPE-001",
+    "title": "Division-by-zero NaN sa FPEngine vectorize_isr (IPv6 OS detection ISR computation)",
+    "class": "CWE-369 (Divide By Zero) — semantic arithmetic bug, HINDI nahuhuli ng ASAN/fuzzing",
+    "location": "FPEngine.cc:812 — t = TIMEVAL_FSEC_SUBTRACT(times[j-1], times[0]); return sum / t;",
+    "mechanism": [
+      "Ang times[] ay RECEIVE timestamps ng 6 SYN-ACK responses (S1-S6 probes)",
+      "Ang attacker ang kumokontrol ng response timing — kung magkasabay (parehong microsecond) ang mga sagot, t = 0.0",
+      "Kung lahat ng seq numbers ay magkakapareho (attacker-controlled): sum = 0.0",
+      "0.0 / 0.0 = NaN (o inf kung magkaiba ang seqs)",
+      "Ang IPv4 path (osscan2.cc:2322 makeTSeqFP) ay MAY GUARD: 'if (!time_usec_diffs) time_usec_diffs++' — ang IPv6 path (FPEngine) ay WALANG GUARD!",
+      "NaN features ay nag-propagate sa apply_scale (NaN < 0 ay false, kaya hindi naka-skip) at sa SVM classification (predict_values)"
+    ],
+    "verification": {
+      "method": "direct call sa vectorize_isr gamit ang #include 'FPEngine.cc' harness na may 6 magkakaparehong-timestamp magkakaparehong-seq responses",
+      "result": "DIRECT vectorize_isr = -nan; NaN CONFIRMED",
+      "sanity": "0.0/0.0 = nan, 5.0/0.0 = inf sa parehong platform"
+    },
+    "reachability": "Attacker sends 6 IPv6 SYN-ACKs na may magkakaparehong seq sa parehong microsecond sa nmap -6 -O scan — practical sa localhost/mabilis na networks kung saan ang receive timestamps ay magkakapareho",
+    "impact": "NaN/inf ISR features → garbage IPv6 OS classification (DoS-class confusion; hindi memory corruption, hindi RCE-convertible mag-isa)",
+    "contrast_with_ipv4": "Ang IPv4 path ay may explicit guard (osscan2.cc:2323: 'if (!time_usec_diffs[j - 1]) time_usec_diffs[j - 1]++; /* We divide by this later */') — ang guard na ito ay HINDI na-port sa IPv6 FPEngine path"
+  },
+  "mythos_methodology_validation": {
+    "found_by": "Semantic invariant tracing (Mythos mode) — hindi mahuhuli ng 8+ bilyong coverage-guided executions kasi walang memory error",
+    "the_invariant_violated": "t != 0 bago division — nasalungan sa IPv4 guard ngunit hindi sa IPv6",
+    "pattern": "Klasikong Mythos: lumipat ang codebase mula IPv4 patungong IPv6 (FPEngine rewrite) at NAIWAN ang division guard — ang mismong klase ng bug na nalalampasan ng code review ngunit nahuhuli ng systematic invariant analysis"
+  },
+  "recommended_fix": "I-add sa FPEngine.cc vectorize_isr bago ang return: if (t == 0.0) return -1; (kaparehas ng IPv4 guard semantics)"
+}

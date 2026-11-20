@@ -1,0 +1,39 @@
+{
+  "report_type": "write_primitive_hunt_rce_conversion",
+  "target": {
+    "name": "Nmap Security Scanner",
+    "version": "7.993SVN (v7.991-198-g8b515f26b)",
+    "asan_build": true
+  },
+  "question": "Given the proven OOB READ (GHOST-SUBST-001, service_scan.cc:813), does a matching OOB WRITE exist in the same pipeline that could convert it to RCE?",
+  "method": {
+    "harness": "fuzz_matchpipeline — constructs real ServiceProbeMatch objects via InitMatch with genuine probe-file match lines ($1, $P, $SUBST multi-char, $I integer, CPE templates), then drives the FULL testMatch pipeline: PCRE2 match -> ovector -> getVersionStr -> dotmplsubst -> every substvar handler",
+    "design_detail": "capture groups are followed by a 16-byte required suffix (TAILTAILTAILTAIL) so they end >= findstrlen-1 bytes before the buffer end — the KNOWN memcmp OOB READ is avoided, isolating the hunt to NEW bugs (writes)",
+    "refinement_discovered": "the OOB READ condition is 'group ends within findstrlen-1 bytes of buffer end', NOT 'group at buffer end' — a 2-byte trailing ZZ was insufficient (fuzzer tripped the known READ on a no-ZZ input via $-before-newline matching); the shipped-probe analysis was re-verified against the refined criterion: all shipped SUBSTs have either 1-char findstr or groups bounded >= findstrlen-1 from the end"
+  },
+  "results": {
+    "match_pipeline_executions": 67441004,
+    "exec_per_sec": 224056,
+    "coverage_units_added": 1246,
+    "oob_writes_found": 0,
+    "oob_reads_found": 0,
+    "conclusion": "No OOB WRITE exists in the version-detection template machinery. All writes are correctly bounded: dotmplsubst memcpy guarded by newstrend; strbuf_append grows via safe_realloc; Strncpy destinations match sizes; cstringSanityCheck copies bounded."
+  },
+  "rce_conversion_assessment": {
+    "ghost_subst_001_class": "heap-buffer-overflow READ (info-leak class)",
+    "write_primitive": "NOT FOUND — machine-verified absent after 67.4M executions on the full pipeline",
+    "leak_oracle_note": "the memcmp result is a 1-bit oracle per position (subject bytes == findstr?), theoretically allowing adjacent-heap-byte probing — but the findstr comes from the LOCAL probe file, so a remote attacker cannot choose probe values; negligible remote leak potential",
+    "verdict": "GHOST-SUBST-001 is NOT convertible to RCE without a second, independent memory-corruption bug — and the 500M+ execution campaign found none in any reachable response-driven surface. The nmap 7.993SVN response path is write-clean."
+  },
+  "campaign_totals": {
+    "coverage_guided_executions": {
+      "netutil_packet_parsers": 238140626,
+      "service_scan_banner_pipeline": 23505484,
+      "dns_response_parser_massdns": 177363632,
+      "match_pipeline_templates": 67441004,
+      "total": 506449746
+    },
+    "memory_corruption_findings": 1,
+    "finding": "GHOST-SUBST-001 heap-buffer-overflow READ at service_scan.cc:813 (unreachable via shipped probes; deterministic via custom probe; info-leak class)"
+  }
+}

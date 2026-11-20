@@ -1,0 +1,10 @@
+Exclude T:9100-9107
+##############################NEXT PROBE##############################
+Probe TCP NULL q||
+rarity 1
+ports 8888
+# Hostile SUBST PoC: group 1 captures to the very last byte of the banner
+# ($ anchored, no DOTALL needed since banner has no newlines), then SUBST
+# walks memcmp("ZZZZZ") across the group. At the group's final byte the
+# memcmp reads past the end of the exactly-sized response buffer.
+match hostile m|^HOSTILE(.*)$| p/Hostile Service/ v/$SUBST(1,"ZZZZZ","Y")/

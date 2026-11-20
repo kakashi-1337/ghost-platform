@@ -1,0 +1,80 @@
+Starting Nmap 7.993SVN ( https://nmap.org ) at 2026-11-09 02:07 +0800
+=================================================================
+==481436==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x708b2adf642b at pc 0x726b2caed445 bp 0x7ffe8bc31730 sp 0x7ffe8bc30ed8
+READ of size 5 at 0x708b2adf642b thread T0
+    #0 0x726b2caed444 in MemcmpInterceptorCommon(void*, int (*)(void const*, void const*, unsigned long), void const*, void const*, unsigned long) ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:848
+    #1 0x726b2caed834 in memcmp ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:880
+    #2 0x726b2caed834 in memcmp ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors.inc:875
+    #3 0x5d3c7f682024 in substvar /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:813
+    #4 0x5d3c7f6828ff in dotmplsubst /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:923
+    #5 0x5d3c7f683a49 in ServiceProbeMatch::getVersionStr(unsigned char const*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long, char*, unsigned long) const /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:1003
+    #6 0x5d3c7f684715 in ServiceProbeMatch::testMatch(unsigned char const*, int) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:565
+    #7 0x5d3c7f686975 in ServiceProbe::testMatch(unsigned char const*, int, int) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:1473
+    #8 0x5d3c7f68ec38 in servicescan_read_handler /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:2552
+    #9 0x5d3c7f77de58 in event_dispatch_and_delete /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_event.c:329
+    #10 0x5d3c7f77696b in process_event /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1118
+    #11 0x5d3c7f7772b4 in process_iod_events /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1183
+    #12 0x5d3c7f785daf in iterate_through_event_lists /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/engine_epoll.c:351
+    #13 0x5d3c7f785daf in epoll_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/engine_epoll.c:318
+    #14 0x5d3c7f776585 in nsock_engine_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_internal.h:440
+    #15 0x5d3c7f776585 in nsock_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1010
+    #16 0x5d3c7f69684b in service_scan(std::vector<Target*, std::allocator<Target*> >&) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:2863
+    #17 0x5d3c7f5c1c39 in nmap_main(int, char**) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nmap.cc:2293
+    #18 0x5d3c7f70ab13 in main /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/main.cc:181
+    #19 0x726b2ba2a600 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:59
+    #20 0x726b2ba2a717 in __libc_start_main_impl ../csu/libc-start.c:360
+    #21 0x5d3c7f5324e4 in _start (/home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nmap+0xee4e4) (BuildId: 121fc6ac97628efd81b78616ab131fc9a590c5dc)
+
+0x708b2adf642b is located 0 bytes after 4907-byte region [0x708b2adf5100,0x708b2adf642b)
+allocated by thread T0 here:
+    #0 0x726b2cb2a6cf in realloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:81
+    #1 0x5d3c7f78fe8c in safe_realloc /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nbase/nbase_memalloc.c:100
+    #2 0x5d3c7f68c006 in ServiceNFO::appendtocurrentproberesponse(unsigned char const*, int) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:1942
+    #3 0x5d3c7f68eb44 in servicescan_read_handler /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:2542
+    #4 0x5d3c7f77de58 in event_dispatch_and_delete /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_event.c:329
+    #5 0x5d3c7f77696b in process_event /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1118
+    #6 0x5d3c7f7772b4 in process_iod_events /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1183
+    #7 0x5d3c7f785daf in iterate_through_event_lists /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/engine_epoll.c:351
+    #8 0x5d3c7f785daf in epoll_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/engine_epoll.c:318
+    #9 0x5d3c7f776585 in nsock_engine_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_internal.h:440
+    #10 0x5d3c7f776585 in nsock_loop /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nsock/src/nsock_core.c:1010
+    #11 0x5d3c7f69684b in service_scan(std::vector<Target*, std::allocator<Target*> >&) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:2863
+    #12 0x5d3c7f5c1c39 in nmap_main(int, char**) /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nmap.cc:2293
+    #13 0x5d3c7f70ab13 in main /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/main.cc:181
+    #14 0x726b2ba2a600 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:59
+    #15 0x726b2ba2a717 in __libc_start_main_impl ../csu/libc-start.c:360
+    #16 0x5d3c7f5324e4 in _start (/home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/nmap+0xee4e4) (BuildId: 121fc6ac97628efd81b78616ab131fc9a590c5dc)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /home/dave/deepseek-harness/default-workspace/nmap_experiment/nmap/service_scan.cc:813 in substvar
+Shadow bytes around the buggy address:
+  0x708b2adf6180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x708b2adf6200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x708b2adf6280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x708b2adf6300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x708b2adf6380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x708b2adf6400: 00 00 00 00 00[03]fa fa fa fa fa fa fa fa fa fa
+  0x708b2adf6480: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x708b2adf6500: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x708b2adf6580: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x708b2adf6600: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x708b2adf6680: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==481436==ABORTING

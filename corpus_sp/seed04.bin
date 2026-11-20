@@ -1,0 +1,4 @@
+HTTP/1.1 200 OK
+Content-Type: text/html
+
+<html><head><title>mongodb x:27017 </title><pre>db version v7.0</pre></html>
